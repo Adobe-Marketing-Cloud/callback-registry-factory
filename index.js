@@ -1,10 +1,21 @@
-var utils = require("./index");
+
+function isObjectEmpty(obj) {
+    return obj === Object(obj) && Object.keys(obj).length === 0;
+}
+
+function isCallbackValid(callback) {
+    return typeof callback === "function" || (callback instanceof Array && callback.length);
+}
 
 module.exports = function callbackRegistryFactory() {
     var registry = {};
     registry.callbacks = Object.create(null);
 
     registry.add = function (key, callback) {
+        if (!isCallbackValid(callback)) {
+            throw new Error("[callbackRegistryFactory] Make sure callback is a function or an array of functions.");
+        }
+
         registry.callbacks[key] = registry.callbacks[key] || [];
         var index = registry.callbacks[key].push(callback) - 1;
 
@@ -33,19 +44,19 @@ module.exports = function callbackRegistryFactory() {
                 }
 
                 delete registry.callbacks[key];
-            } catch (ex) { 
+            } catch (ex) {
                 // Fail gracefully and silently. 
             }
         }
     };
 
-    registry.executeAll = function (valuesMap, forceExecute) {
-        if (!forceExecute && (!valuesMap || utils.isObjectEmpty(valuesMap))) {
+    registry.executeAll = function (paramsMap, forceExecute) {
+        if (!forceExecute && (!paramsMap || isObjectEmpty(paramsMap))) {
             return;
         }
 
         Object.keys(registry.callbacks).forEach(function (key) {
-            var value = valuesMap[key] !== undefined ? valuesMap[key] : "";
+            var value = paramsMap[key] !== undefined ? paramsMap[key] : "";
             registry.execute(key, value);
         }, registry);
     };
